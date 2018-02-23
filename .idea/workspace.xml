@@ -19,7 +19,7 @@
           <file leaf-file-name="index.js" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/chat/index.js">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="287">
+                <state relative-caret-position="-19">
                   <caret line="87" column="26" lean-forward="false" selection-start-line="87" selection-start-column="26" selection-end-line="87" selection-end-column="26" />
                   <folding />
                 </state>
@@ -190,12 +190,12 @@
       <workItem from="1518160684362" duration="12662000" />
       <workItem from="1519132927287" duration="1950000" />
       <workItem from="1519372280568" duration="167000" />
-      <workItem from="1519379492408" duration="8378000" />
+      <workItem from="1519379492408" duration="8902000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="26839000" />
+    <option name="totallyTimeSpent" value="27363000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="25" width="1600" height="828" extended-state="6" />
@@ -376,7 +376,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/chat/index.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="287">
+        <state relative-caret-position="-19">
           <caret line="87" column="26" lean-forward="false" selection-start-line="87" selection-start-column="26" selection-end-line="87" selection-end-column="26" />
           <folding />
         </state>
