@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Socket.IO</title>
+</head>
+<body>
+<ul id="messages"></ul>
+<form action="">
+    <input id="duration" placeholder="Duration" autocomplete="off"/>
+    <input id="guard" placeholder="guardId" autocomplete="off"/>
+    <button>Send request</button>
+</form>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+<script>
+    $(function () {
+
+        var socket = io.connect();
+
+        var carOwner = {
+            carOwnerId: "1",
+            carOwnerName: "Akena Kenedy",
+            licenseNumber: "UAB098Z",
+            vehicleType: "Toyota primeo"
+        };
+
+        //socket.emit('disconn owner', carOwner.carOwnerId);
+        socket.emit('add owner', carOwner.carOwnerId);
+
+        $('form').submit(function () {
+            carOwner["duration"] = $('#duration').val();
+            carOwner["guard"] = $('#guard').val();
+
+            socket.emit('new request', carOwner);
+
+            return false;
+        });
+        socket.on('new message', function (data) {
+            $('#messages').append($('<li>')
+                .text('Agent '+data.guardId+' '+data.status+' your request'));
+        });
+    });
+</script>
+</body>
+</html>
