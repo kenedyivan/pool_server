@@ -105,7 +105,9 @@ function findActiveGuard(res) {///todo Add a single guard selection criteria to 
                             last_name: data.last_name,
                             email: data.email,
                             phone: data.phone,
-                            gender: data.gender
+                            gender: data.gender,
+                            success: 1,
+                            msg:"found guard"
                         }
                     }
 
@@ -115,6 +117,7 @@ function findActiveGuard(res) {///todo Add a single guard selection criteria to 
         }
     } else {
         guard = {
+            success: 0,
             msg: "No active guard found"
         };
 
