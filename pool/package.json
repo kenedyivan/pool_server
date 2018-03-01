@@ -7,6 +7,7 @@
   "private": true,
   "license": "BSD",
   "dependencies": {
+    "body-parser": "^1.18.2",
     "express": "4.13.4"
   },
   "scripts": {

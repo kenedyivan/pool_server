@@ -1,15 +1,22 @@
 // Setup basic express server
 var express = require('express');
+var bodyParser = require('body-parser')
 var app = express();
 var path = require('path');
 var server = require('http').createServer(app);
 var io = require('../')(server);
 var port = process.env.PORT || 3000;
 var mysql = require('mysql');
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({
+    extended: false
+}));
 
 var numUsers = 0;
 var OwnerSocketObjects = {};
 var GuardSocketObjects = {};
+var activeGuardsArray = [];
+var inActiveGuardsArray = [];
 
 // Routing
 app.use(express.static(path.join(__dirname, 'public')));
@@ -28,14 +35,14 @@ var connection = mysql.createConnection({
 
 connection.connect();
 
-connection.query('SELECT * from vecurityapiapp_carowner', function (err, rows, fields) {
+/*connection.query('SELECT * from vecurityapiapp_carowner', function (err, rows, fields) {
     if (err) throw err;
 
     for (var i = 0; i < rows.length; i++) {
         console.log('User: ', rows[i].first_name);
     }
 
-});
+});*/
 
 //connection.end();
 
@@ -48,11 +55,15 @@ app.get('/', function (req, res) {
 });
 
 app.get('/find-guard', function (req, res) {
-    findActiveGuard(res);
+    findOnlineGuard(res);
 });
 
 app.get('/active-guards', function (req, res) { //Route for logging active guards
     listGuards(res);
+});
+
+app.post('/finish-guard', function (req, res) { //Route for logging active guards
+    finishGuardProcess(req, res);
 });
 
 /**
@@ -89,11 +100,19 @@ function listGuards(res) { //Lists active guards
     res.send("See console logs");
 }
 
-function findActiveGuard(res) {///todo Add a single guard selection criteria to this method
+function findOnlineGuard(res) {///todo Add a single guard selection criteria to this method
     var guard = null;
+    var found = false;
     if (Object.size(GuardSocketObjects) > 0) {
         for (var i = 0; i < Object.size(GuardSocketObjects); i++) {
-            connection.query('SELECT * FROM vecurityapiapp_guard WHERE id=' + Object.keys(GuardSocketObjects)[i],
+            var gId = Object.keys(GuardSocketObjects)[i];
+            console.log("GID: ", gId);
+            if (GuardSocketObjects[gId].status === 'active') {
+                continue;
+            }
+            found = true;
+            console.log('Status: ', GuardSocketObjects[gId].status);
+            connection.query('SELECT * FROM vecurityapiapp_guard WHERE id=' + gId,
                 function (err, rows, fields) {
                     if (err) throw err;
 
@@ -107,22 +126,50 @@ function findActiveGuard(res) {///todo Add a single guard selection criteria to 
                             phone: data.phone,
                             gender: data.gender,
                             success: 1,
-                            msg:"found guard"
+                            msg: "found guard"
                         }
                     }
 
                     res.send(guard);
 
                 });
+
         }
+
+        if (!found) {
+            guard = {
+                success: 0,
+                msg: "All guards active"
+            };
+            res.send(guard);
+        }
+
     } else {
         guard = {
             success: 0,
-            msg: "No active guard found"
+            msg: "No guards found"
         };
 
         res.send(guard);
     }
+}
+
+function finishGuardProcess(req, res) {
+    var ownerId = req.body.ownerId;
+    var guardId = req.body.guardId;
+
+    if (GuardSocketObjects[guardId].status === 'active') {
+        GuardSocketObjects[guardId].status = 'inactive';
+        OwnerSocketObjects[ownerId].emit('new message', {
+            msg: 'Guarding ended, time to pay up',
+            success: 1
+        });
+        res.send({success: 1, msg: 'guarding completed'});
+    } else {
+        res.send({success: 0, msg: 'process failed'});
+    }
+
+
 }
 
 /**
@@ -133,16 +180,21 @@ io.on('connection', function (socket) {
     console.log('a user connected');
 
 
-    socket.on('add owner', function (ownerId) {
+    socket.on('add owner', function (ownerId) { ///todo Implement the new owner object
         console.log('OwnerID: ' + ownerId);
-        delete OwnerSocketObjects[ownerId];
-        OwnerSocketObjects[ownerId] = socket;
+        if (OwnerSocketObjects[ownerId] === undefined) {
+            delete OwnerSocketObjects[ownerId];
+            OwnerSocketObjects[ownerId] = socket;
+        }
+
     });
 
-    socket.on('add guard', function (guardId) {
+    socket.on('add guard', function (guardId) { ///todo Implement the new guard object
         console.log('GuardID: ' + guardId);
         delete GuardSocketObjects[guardId];
-        GuardSocketObjects[guardId] = socket;
+        GuardSocketObjects[guardId] = {id: guardId, socket: socket, status: "inactive"};
+        console.log("Guards: ", GuardSocketObjects);
+
     });
 
     //var addedUser = false;
@@ -161,7 +213,7 @@ io.on('connection', function (socket) {
 
         //console.log('Guards: ', GuardSocketObjects);
 
-        GuardSocketObjects[guard].emit('send request', {
+        GuardSocketObjects[guard].socket.emit('send request', {
             carOwnerId: carOwnerId,
             carOwnerName: carOwnerName,
             licenseNumber: licenseNumber,
@@ -172,11 +224,17 @@ io.on('connection', function (socket) {
 
     socket.on('accept', function (data) {
 
+        var gId;
         if (OwnerSocketObjects[data.ownerId]) {
+            gId = data.guardId;
             OwnerSocketObjects[data.ownerId].emit('new message', {
                 guardId: data.guardId,
                 status: data.status
             });
+
+            if (GuardSocketObjects[gId].status === 'inactive') {
+                GuardSocketObjects[gId].status = 'active';
+            }
         }
     });
 
@@ -195,7 +253,7 @@ io.on('connection', function (socket) {
         if (OwnerSocketObjects[data.ownerId]) {
             OwnerSocketObjects[data.ownerId].emit('new message', {
                 guardId: data.guardId,
-                status: data.status
+                status: 'no_response'
             });
         }
     });
